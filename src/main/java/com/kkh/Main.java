@@ -45,15 +45,14 @@ public class Main {
 //====================================================================================
 */
 
-    private static final String APPLICATION_NAME = "Google Sheets API Java Quickstart";
+    private static final String APPLICATION_NAME = "kkh-roster";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
 
     /**
-     * Global instance of the scopes required by this quickstart.
+     * Global instance of the scopes required by this kkh-roster.
      * If modifying these scopes, delete your previously saved tokens/ folder.
      */
-    //private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS_READONLY);
     private static final List<String> SCOPES = new ArrayList<>();//Collections.singletonList(SheetsScopes.DRIVE,SheetsScopes.SPREADSHEETS);
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
 
@@ -127,7 +126,6 @@ public class Main {
 
         // Build a new authorized API client service.
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-        //final String spreadsheetId = "1T2zC68QRSD3WXrmJczcu3-ewJ6bXabBmskLepM1Ub7A";
         final String sourceSpreadsheetId = args[1];
 
         final String range = args[3];
@@ -202,7 +200,6 @@ public class Main {
         System.out.printf("First doctor on the list: %s", sortedDoctors.get(0).getName());
 
         for (int i=0; i<daysOfTheMonth; i++) {
-            //Day day = new Day(i+1);
             Day day = dayMap.get(Integer.valueOf(i+1));
             for (Doctor doctor: sortedDoctors) {
                 Cell cell = doctor.getCells().get(i);
@@ -228,7 +225,7 @@ public class Main {
             }
         }
 
-        // output the content to see
+        // output the content to verify
         System.out.println("|Doctor|001|002|003|004|005|006|007|008|009|010|011|012|013|014|015|016|017|018|019|020|021|022|023|024|025|026|027|028|029|030|031|TOT|");
         for (Doctor doctor: doctors) {
             String name = doctor.getName();
