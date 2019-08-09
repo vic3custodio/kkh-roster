@@ -17,3 +17,10 @@ kkh doctors rostering app
 
     final String targetSpreadsheetId = "**1psqPSDk16rpZBrQ-CP1_NS_-eDf4BLIG95ehdk_auCQ**";
 7. Run the program.
+
+C:\GitHub\kkh-roster\build\libs>java -jar /GitHub/kkh-roster/build/libs/kkh_roster-1.0-SNAPSHOT-uber.jar <yyyy-MM-dd> <sourceSpreadSheetId> <targetSpreadSheetId>
+
+C:\GitHub\kkh-roster\build\libs>java -jar /GitHub/kkh-roster/build/libs/kkh_roster-1.0-SNAPSHOT-uber.jar 2019-01-01 1wIjFxOuctD-f0s9gG3f0QDf2QmkS1tXwT3o5hBU__-0 1psqPSDk16rpZBrQ-CP1_NS_-eDf4BLIG95ehdk_auCQ
+
+
+

@@ -2,12 +2,14 @@ plugins {
     id 'java'
 }
 
-group 'com.com.kkh'
+group 'com.kkh'
 version '1.0-SNAPSHOT'
 
-//mainClassName = 'Main'
-
 sourceCompatibility = 1.8
+
+//main {
+//    mainClassName = 'com.kkh.Main'
+//}
 
 repositories {
     mavenCentral()
@@ -18,4 +20,25 @@ dependencies {
     compile 'com.google.oauth-client:google-oauth-client-jetty:1.23.0'
     compile 'com.google.apis:google-api-services-sheets:v4-rev516-1.23.0'
     testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+task uberJar(type: Jar) {
+    archiveClassifier = 'uber'
+
+    from sourceSets.main.output
+
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+
+    manifest {
+        attributes("Main-Class": "com.kkh.Main")
+    }
+}
+
+jar {
+    manifest {
+        attributes("Main-Class": "com.kkh.Main")
+    }
 }
