@@ -53,10 +53,37 @@ public class Main {
     private static final List<String> SCOPES = new ArrayList<>();//Collections.singletonList(SheetsScopes.DRIVE,SheetsScopes.SPREADSHEETS);
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
 
+    public static final String BLUE = "BLUE";
+    public static final String F = "F";
+    public static final String C = "C";
+    public static final String L = "L";
+
+    private static Set<String> skip;
+    private static Color doNotFillColor;
+    private static Color blueDoctorColor;
+
     static {
         SCOPES.add(SheetsScopes.DRIVE);
         SCOPES.add(SheetsScopes.DRIVE_FILE);
         SCOPES.add(SheetsScopes.SPREADSHEETS);
+
+        skip = new HashSet<>();
+        skip.add("Events");
+        skip.add("Teaching");
+        skip.add("Department Juniors");
+        skip.add("Residents");
+        skip.add("TOTAL NUMBER ON LEAVE");
+        //skip.add("No of calls");
+
+        doNotFillColor = new Color();
+        doNotFillColor.setBlue(0.8f);
+        doNotFillColor.setGreen(0.8f);
+        doNotFillColor.setRed(0.8f);
+
+        blueDoctorColor = new Color();
+        blueDoctorColor.setBlue(0.9529412f);
+        blueDoctorColor.setGreen(0.8862745f);
+        blueDoctorColor.setRed(0.8117647f);
     }
 
     /**
@@ -87,8 +114,6 @@ public class Main {
         return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
     }
 
-
-
     public static void main(String[] args) {
         try {
             String date = "2019-01-01";
@@ -109,7 +134,12 @@ public class Main {
                 appArgs[0] = args[0];
                 appArgs[1] = args[1];
                 appArgs[2] = args[2];
-                appArgs[3] = range;
+                if (args.length > 3) {
+                    appArgs[3] = args[3];
+                }
+                else {
+                    appArgs[3] = range;
+                }
             }
 
             generateC(appArgs);
@@ -122,14 +152,6 @@ public class Main {
     public static void generateC(String[] args) throws Exception {
 
         // fill the sheet with known information (doctor's name, type, color, days leave, C, filled)
-        Set<String> skip = new HashSet<>();
-        skip.add("Events");
-        skip.add("Teaching");
-        skip.add("Department Juniors");
-        skip.add("Residents");
-        skip.add("TOTAL NUMBER ON LEAVE");
-        //skip.add("No of calls");
-
         String date = args[0];
         //default, ISO_LOCAL_DATE
         LocalDate localDate = LocalDate.parse(date);
@@ -158,16 +180,6 @@ public class Main {
         // Value : F, Cell color : {"blue":0.8,"green":0.8,"red":0.8}
         // Value : Lye Siyu (R2) [1/10-2/1/19], Cell color : {"blue":0.9529412,"green":0.8862745,"red":0.8117647}
 
-        Color doNotFillColor = new Color();
-        doNotFillColor.setBlue(0.8f);
-        doNotFillColor.setGreen(0.8f);
-        doNotFillColor.setRed(0.8f);
-
-        Color blueDoctorColor = new Color();
-        blueDoctorColor.setBlue(0.9529412f);
-        blueDoctorColor.setGreen(0.8862745f);
-        blueDoctorColor.setRed(0.8117647f);
-
         for (GridData gridData: gridDatas) {
             int ctr = 1;
             for (RowData rowData: gridData.getRowData()) {
@@ -179,7 +191,7 @@ public class Main {
                 Doctor doctor = new Doctor(doctorCellData.getFormattedValue());
                 if (doctorCellData.getEffectiveFormat() != null && doctorCellData.getEffectiveFormat().getBackgroundColor() != null && doctorCellData.getEffectiveFormat().getBackgroundColor().equals(blueDoctorColor)) {
                     System.out.printf("Pre-Setting doctor to BLUE Doctor Name: %s\n", doctor.getName());
-                    doctor.setColor("BLUE");
+                    doctor.setColor(BLUE);
                 }
                 for (int i=1; i<=daysOfTheMonth; i++) {
                     CellData cellData = rowData.getValues().get(i);
@@ -238,7 +250,7 @@ public class Main {
                     else {
                         if (doctors.get(j).getCells().size() >= i-1) {
                             String value = doctors.get(j).getCells().get(i - 1).getValue();
-                            if (value != null && !"F".equals(value)) {
+                            if (value != null && !F.equals(value)) {
                                 row.set(i, doctors.get(j).getCells().get(i - 1).getValue());
                             }
                             else {
@@ -251,7 +263,7 @@ public class Main {
                 else {
                     if (doctors.size() > j) {
                         String value = doctors.get(j).getCells().get(i - 1).getValue();
-                        if (value != null && !"F".equals(value)) {
+                        if (value != null && !F.equals(value)) {
                             row.add(value);
                         }
                         else {
@@ -356,7 +368,7 @@ public class Main {
         Cell cell = new Cell();
         //String cellValue = cellData.getFormattedValue();
         if (cellData.getEffectiveFormat() != null && cellData.getEffectiveFormat().getBackgroundColor() != null && cellData.getEffectiveFormat().getBackgroundColor().equals(doNotFillColor)) {
-            cellValue = "F";
+            cellValue = F;
         }
         setCell(doctor, day, cell, cellValue);
         doctor.getCells().add(cell);
@@ -379,21 +391,21 @@ public class Main {
         if (cellValue == null) {
             cellValue = "";
         }
-        if (cellValue.indexOf("C") > -1) {
+        if (cellValue.indexOf(C) > -1) {
             System.out.printf("Pre-Setting doctor to %s Doctor Name: %s, Day: %s\n", cellValue, doctor.getName(), day.getDay());
             cell.setValue(cellValue);
             doctor.addCurrentTotalNumberOfCs();
             day.addTotalNumberOfDoctorOnC();
-            if (doctor.getName().indexOf("B-") == 0) {
+            if (BLUE.equals(doctor.getColor())) {
                 day.addNumberOfBlueDoctorOnC();
             }
         }
-        else if (cellValue.indexOf("L") > -1) {
+        else if (cellValue.indexOf(L) > -1) {
             System.out.printf("Pre-Setting doctor to %s Doctor Name: %s, Day: %s\n", cellValue, doctor.getName(), day.getDay());
             cell.setValue(cellValue);
             doctor.addCurrentTotalNumberOfLs();
         }
-        else if (cellValue.indexOf("F") > -1) {
+        else if (cellValue.indexOf(F) > -1) {
             System.out.printf("Pre-Setting doctor to %s Doctor Name: %s, Day: %s\n", cellValue, doctor.getName(), day.getDay());
             cell.setValue(cellValue);
         }
@@ -404,15 +416,15 @@ public class Main {
     }
 
     private static void tryToAssignC(Doctor doctor, Cell cell, Day day) {
-        if (!"BLUE".equalsIgnoreCase(doctor.getColor())) {
+        if (!BLUE.equalsIgnoreCase(doctor.getColor())) {
             System.out.printf("Setting non-blue doctor to C Doctor Name: %s, Day: %s\n", doctor.getName(), day.getDay());
-            cell.setValue("C");
+            cell.setValue(C);
             doctor.addCurrentTotalNumberOfCs();
             day.addTotalNumberOfDoctorOnC();
         } else {
             if (day.getNumberOfBlueDoctorOnC() < 1) {
                 System.out.printf("Setting blue doctor to C Doctor Name: %s, Day: %s\n", doctor.getName(), day.getDay());
-                cell.setValue("C");
+                cell.setValue(C);
                 doctor.addCurrentTotalNumberOfCs();
                 day.addTotalNumberOfDoctorOnC();
                 day.addNumberOfBlueDoctorOnC();
