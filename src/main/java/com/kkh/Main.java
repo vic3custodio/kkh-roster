@@ -20,8 +20,9 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.*;
 
-import java.security.GeneralSecurityException;
 import java.util.List;
+
+import static java.time.temporal.ChronoUnit.DAYS;
 
 public class Main {
 
@@ -54,9 +55,10 @@ public class Main {
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
 
     public static final String BLUE = "BLUE";
-    public static final String F = "F";
     public static final String C = "C";
     public static final String L = "L";
+    public static final String F = "F";
+    public static final String DOT = ".";
 
     private static Set<String> skip;
     private static Color doNotFillColor;
@@ -114,63 +116,81 @@ public class Main {
         return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
     }
 
-    public static void main(String[] args) {
-        try {
-            String date = "2019-01-01";
-            final String sourceSpreadsheetId = "1wIjFxOuctD-f0s9gG3f0QDf2QmkS1tXwT3o5hBU__-0";
-            final String targetSpreadsheetId = "1psqPSDk16rpZBrQ-CP1_NS_-eDf4BLIG95ehdk_auCQ";
-            final String range = "test!A3:AF";
+    public static void main(String[] args) throws Exception {
+        String dateRange = "2019-01-01to2019-01-31";
+        //String dateRange = "2019-01-01to2019-01-15";
+        //String dateRange = "2019-01-01";
+        final String sourceSpreadsheetId = "1wIjFxOuctD-f0s9gG3f0QDf2QmkS1tXwT3o5hBU__-0";
+        final String targetSpreadsheetId = "1psqPSDk16rpZBrQ-CP1_NS_-eDf4BLIG95ehdk_auCQ";
+        final String range = "test!A3:AG";
+        //final String range = "test!A3:Q";
 
-            String[] appArgs = null;
-            if (args == null || args.length < 1) {
-                appArgs = new String[4];
-                appArgs[0] = date;
-                appArgs[1] = sourceSpreadsheetId;
-                appArgs[2] = targetSpreadsheetId;
-                appArgs[3] = range;
-            } else {
-                System.out.println("Program arguments was provided!!!");
-                appArgs = new String[4];
-                appArgs[0] = args[0];
-                appArgs[1] = args[1];
-                appArgs[2] = args[2];
-                if (args.length > 3) {
-                    appArgs[3] = args[3];
-                }
-                else {
-                    appArgs[3] = range;
-                }
+        String[] appArgs = new String[5];
+        if (args == null || args.length < 1) {
+            String[] dates = dateRange.split("to");
+            appArgs[0] = dates[0];
+            if (dates.length > 1) {
+                appArgs[1] = dates[1];
             }
+            else {
+                appArgs[1] = dates[0];
+            }
+            appArgs[2] = sourceSpreadsheetId;
+            appArgs[3] = targetSpreadsheetId;
+            appArgs[4] = range;
+        } else {
+            System.out.println("Program arguments was provided!!!");
+            String[] dates = args[0].split("to");
+            appArgs[0] = dates[0];
+            if (dates.length > 1) {
+                appArgs[1] = dates[1];
+            }
+            else {
+                appArgs[1] = dates[0];
+            }
+            appArgs[2] = args[1];
+            appArgs[3] = args[2];
+            if (args.length > 3) {
+                appArgs[4] = args[3];
+            } else {
+                appArgs[4] = range;
+            }
+        }
 
-            generateC(appArgs);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+        generateC(appArgs);
     }
 
     public static void generateC(String[] args) throws Exception {
 
         // fill the sheet with known information (doctor's name, type, color, days leave, C, filled)
-        String date = args[0];
+        String dateFrom = args[0];
+        String dateTo = args[1];
         //default, ISO_LOCAL_DATE
-        LocalDate localDate = LocalDate.parse(date);
-        Month month = localDate.getMonth();
-        Integer daysOfTheMonth = month.length(localDate.isLeapYear());
+        LocalDate localDateFrom = LocalDate.parse(dateFrom);
+        LocalDate localDateTo = LocalDate.parse(dateTo);
+        if (localDateFrom.compareTo(localDateTo) == 0) {
+            Month month = localDateFrom.getMonth();
+            Integer lastDayOfTheMonth = month.length(localDateFrom.isLeapYear());
+            String date = localDateFrom.getYear() + "-" + padWithZero("" + localDateFrom.getMonthValue()) + "-" + padWithZero("" + lastDayOfTheMonth);
+            //default, ISO_LOCAL_DATE
+            localDateTo = LocalDate.parse(date);
+        }
+
+        Long daysBetween = DAYS.between(localDateFrom, localDateTo) + 1;
 
         // scan the sheet once to take the inputted information.
         List<Doctor> doctors = new ArrayList<>();
 
         // Build a new authorized API client service.
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-        final String sourceSpreadsheetId = args[1];
+        final String sourceSpreadsheetId = args[2];
 
-        final String range = args[3];
+        final String range = args[4];
         Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
                 .setApplicationName(APPLICATION_NAME)
                 .build();
 
-        Map<Integer, Day> dayMap = new HashMap<>();
+        Map<LocalDate, Day> dayMap = new HashMap<>();
 
         Sheets.Spreadsheets.Get get = service.spreadsheets().get(sourceSpreadsheetId).setIncludeGridData(true);
         Spreadsheet spreadsheet = get.execute();
@@ -184,22 +204,27 @@ public class Main {
             int ctr = 1;
             for (RowData rowData: gridData.getRowData()) {
                 CellData doctorCellData = rowData.getValues().get(0);
-                if (ctr == 1 || doctorCellData.getFormattedValue() == null || skip.contains(doctorCellData.getFormattedValue())) {
+                CellData doctorTierCellData = rowData.getValues().get(1);
+                if (ctr == 1 || ctr == 2 || doctorCellData.getFormattedValue() == null || skip.contains(doctorCellData.getFormattedValue())) {
                     ctr++;
                     continue;
                 }
                 Doctor doctor = new Doctor(doctorCellData.getFormattedValue());
-                if (doctorCellData.getEffectiveFormat() != null && doctorCellData.getEffectiveFormat().getBackgroundColor() != null && doctorCellData.getEffectiveFormat().getBackgroundColor().equals(blueDoctorColor)) {
+                if ("R2".equals(doctorTierCellData.getFormattedValue())) {
+                    doctor.setColor(BLUE);
+                }
+                else if (doctorCellData.getEffectiveFormat() != null && doctorCellData.getEffectiveFormat().getBackgroundColor() != null && doctorCellData.getEffectiveFormat().getBackgroundColor().equals(blueDoctorColor)) {
                     System.out.printf("Pre-Setting doctor to BLUE Doctor Name: %s\n", doctor.getName());
                     doctor.setColor(BLUE);
                 }
-                for (int i=1; i<=daysOfTheMonth; i++) {
-                    CellData cellData = rowData.getValues().get(i);
+                for (int i=1; i<=daysBetween.intValue(); i++) {
+                    CellData cellData = rowData.getValues().get(i+1);
                     Day day = null;
-                    if (dayMap.containsKey(Integer.valueOf(i))) {
-                        day = dayMap.get(Integer.valueOf(i));
+                    LocalDate ld = localDateFrom.plusDays(i-1);
+                    if (dayMap.containsKey(ld)) {
+                        day = dayMap.get(ld);
                     } else {
-                        dayMap.put(Integer.valueOf(i), new Day(Integer.valueOf(i)));
+                        dayMap.put(ld, new Day(ld.getDayOfMonth()));
                     }
                     if (cellData != null) {
                         //if (cellData != null && cellData.getEffectiveFormat() != null && cellData.getEffectiveFormat().getBackgroundColor() != null) {
@@ -217,19 +242,20 @@ public class Main {
         }
 
         // scan the sheet second time to generate the C
-        assignCToDoctors(doctors, dayMap, daysOfTheMonth, localDate, 1);
-        assignCToDoctors(doctors, dayMap, daysOfTheMonth, localDate, 2);
-        assignCToDoctors(doctors, dayMap, daysOfTheMonth, localDate, 3);
+        // do it 3 times to distribute evenly
+        assignCToDoctors(doctors, dayMap, daysBetween.intValue(), localDateFrom, 1);
+        assignCToDoctors(doctors, dayMap, daysBetween.intValue(), localDateFrom, 2);
+        assignCToDoctors(doctors, dayMap, daysBetween.intValue(), localDateFrom, 3);
 
         // output the content to verify
-        List<Object> cTotals = outputToVerify(doctors, dayMap, daysOfTheMonth);
+        List<Object> cTotals = outputToVerify(doctors, dayMap, localDateFrom, daysBetween.intValue());
 
         // copy the generated data to another sheet
-        copyResultToTargetSheet(service, sourceSpreadsheetId, range, args, doctors, daysOfTheMonth, cTotals, skip);
+        copyResultToTargetSheet(service, sourceSpreadsheetId, range, args, doctors, daysBetween.intValue(), cTotals, skip);
 
     }
 
-    private static void copyResultToTargetSheet(Sheets service, String sourceSpreadsheetId, String range, String[] args, List<Doctor> doctors, Integer daysOfTheMonth, List<Object> cTotals, Set<String> skip) throws Exception {
+    private static void copyResultToTargetSheet(Sheets service, String sourceSpreadsheetId, String range, String[] args, List<Doctor> doctors, Integer daysBetween, List<Object> cTotals, Set<String> skip) throws Exception {
         ValueRange response = service.spreadsheets().values()
                 .get(sourceSpreadsheetId, range)
                 .execute();
@@ -240,7 +266,7 @@ public class Main {
         List<List<Object>> updatedValues = new ArrayList<>();
         for (List row : values) {
             boolean isSkip = false;
-            for (int i = 0; i <= daysOfTheMonth; i++) {
+            for (int i = 0; i <= (daysBetween+1); i++) {
                 if (row.size() > i) {
                     if (i == 0) { // first column is the name
                         String name = row.get(i).toString();
@@ -249,22 +275,27 @@ public class Main {
                             break;
                         }
                     }
+                    else if (i == 1) { // second column is the tier
+                        row.set(i, row.get(i).toString());
+                    }
                     else {
-                        if (doctors.get(j).getCells().size() >= i-1) {
-                            String value = doctors.get(j).getCells().get(i - 1).getValue();
+                        if (doctors.get(j).getCells().size() >= (i - 2)) {
+                            String value = doctors.get(j).getCells().get(i - 2).getValue();
                             if (value != null && !F.equals(value)) {
-                                row.set(i, doctors.get(j).getCells().get(i - 1).getValue());
+                                row.set(i, doctors.get(j).getCells().get(i - 2).getValue());
                             }
                             else {
                                 row.set(i, "");
                             }
-
                         }
                     }
                 }
                 else {
-                    if (doctors.size() > j) {
-                        String value = doctors.get(j).getCells().get(i - 1).getValue();
+                    if (i == 1) { // second column is the tier
+                        row.add("");
+                    }
+                    else if (doctors.size() > j && i > 1) {
+                        String value = doctors.get(j).getCells().get(i - 2).getValue();
                         if (value != null && !F.equals(value)) {
                             row.add(value);
                         }
@@ -279,11 +310,12 @@ public class Main {
             }
             updatedValues.add(row);
         }
+        cTotals.add(0, "");
         updatedValues.add(cTotals);
 
         ValueRange body = new ValueRange().setValues(updatedValues);
 
-        final String targetSpreadsheetId = args[2];
+        final String targetSpreadsheetId = args[3];
 
         service.spreadsheets().values().update(targetSpreadsheetId, range, body)
                 //.setValueInputOption("USER_ENTERED")
@@ -291,7 +323,7 @@ public class Main {
                 .execute();
     }
 
-    private static List<Object> outputToVerify(List<Doctor> doctors, Map<Integer, Day> dayMap, Integer daysOfTheMonth) {
+    private static List<Object> outputToVerify(List<Doctor> doctors, Map<LocalDate, Day> dayMap, LocalDate localDateFrom, Integer daysBetween) {
         System.out.println("|Doctor|001|002|003|004|005|006|007|008|009|010|011|012|013|014|015|016|017|018|019|020|021|022|023|024|025|026|027|028|029|030|031|TOT|");
         for (Doctor doctor: doctors) {
             String name = doctor.getName();
@@ -302,8 +334,8 @@ public class Main {
                 name = padWithSpace(name, 7);
             }
             String row = "|" + name + "|";
-            for (int i=0; i<daysOfTheMonth+1; i++) {
-                if (i == daysOfTheMonth) {
+            for (int i=0; i<daysBetween+1; i++) {
+                if (i == daysBetween) {
                     row = row + " " + doctor.getCurrentTotalNumberOfCs() + " |";
                 }
                 else {
@@ -316,8 +348,9 @@ public class Main {
         List<Object> cTotals = new ArrayList<>();
         cTotals.add("");
         String total = "|TOTAL |";
-        for (int i=0; i<daysOfTheMonth; i++) {
-            Day day = dayMap.get(Integer.valueOf(i+1));
+        for (int i=0; i<daysBetween; i++) {
+            LocalDate ld = localDateFrom.plusDays(i);
+            Day day = dayMap.get(ld);
             total = total + " " + day.getTotalNumberOfDoctorOnC() + " |";
             cTotals.add("" + day.getTotalNumberOfDoctorOnC());
         }
@@ -326,7 +359,7 @@ public class Main {
         return cTotals;
     }
 
-    private static void assignCToDoctors(List<Doctor> doctors, Map<Integer, Day> dayMap, Integer daysOfTheMonth, LocalDate localDate, Integer columnLimit) {
+    private static void assignCToDoctors(List<Doctor> doctors, Map<LocalDate, Day> dayMap, Integer daysBetween, LocalDate localDateFrom, Integer columnLimit) {
         List<Doctor> sortedDoctors = new ArrayList<>(doctors);
         //List<Doctor> sortedDoctors = new ArrayList<>();//(doctors);
         //sortedDoctors.addAll(doctors);
@@ -339,24 +372,24 @@ public class Main {
         System.out.printf("First doctor on the list: %s", sortedDoctors.get(0).getName());
         System.out.println("");
 
-        for (int i=0; i<daysOfTheMonth; i++) {
-            Day day = dayMap.get(Integer.valueOf(i+1));
+        for (int i=0; i<daysBetween; i++) {
+            LocalDate ld = localDateFrom.plusDays(i);
+            Day day = dayMap.get(ld);
             for (Doctor doctor: sortedDoctors) {
                 Cell cell = doctor.getCells().get(i);
                 if (cell.getValue() == null || cell.getValue().length() == 0) {
                     //if (!cell.isFilled()) {
-                    if (isSpaceBetweenTwoCMoreThanOne(doctor, i, daysOfTheMonth)) {
+                    if (isSpaceBetweenTwoCMoreThanOne(doctor, i, daysBetween)) {
                         if (doctor.getCurrentTotalNumberOfCs() < 6) {
                             if (day.getTotalNumberOfDoctorOnC() < columnLimit) {
-                                if ((i < (daysOfTheMonth-1) && !doctor.getCells().get(i + 1).isL()) || i == (daysOfTheMonth-1)) {
-                                //if (i < (daysOfTheMonth) && (i < (daysOfTheMonth) && !doctor.getCells().get(i + 1).isL())) {
-                                    String date = localDate.getYear() + "-" + padWithZero("" + localDate.getMonthValue()) + "-" + padWithZero("" + (i+1));
+                                if ((i < (daysBetween-1) && !doctor.getCells().get(i + 1).isL()) || i == (daysBetween-1)) {
+                                    //String date = localDateFrom.getYear() + "-" + padWithZero("" + localDateFrom.getMonthValue()) + "-" + padWithZero("" + (i+1));
                                     //default, ISO_LOCAL_DATE
-                                    LocalDate ld = LocalDate.parse(date);
+                                    //LocalDate ld = LocalDate.parse(date);
                                     if (DayOfWeek.SATURDAY.compareTo(ld.getDayOfWeek()) != 0) {
                                         tryToAssignC(doctor, cell, day);
                                     } else {
-                                        if (isNotCOnConsecutiveSat(doctor, i, daysOfTheMonth)) {
+                                        if (isNotCOnConsecutiveSat(doctor, i, daysBetween)) {
                                             tryToAssignC(doctor, cell, day);
                                         }
                                     }
@@ -421,6 +454,10 @@ public class Main {
         else if (cellValue.indexOf(F) > -1) {
             System.out.printf("Pre-Setting doctor to %s Doctor Name: %s, Day: %s\n", cellValue, doctor.getName(), day.getDay());
             cell.setValue(cellValue);
+        }
+        else if (cellValue.indexOf(DOT) > -1) {
+            System.out.printf("Pre-Setting doctor to %s Doctor Name: %s, Day: %s\n", cellValue, doctor.getName(), day.getDay());
+            cell.setValue(F);
         }
         else {
             //System.out.printf("Pre-Setting doctor to blank Doctor Name: %s, Day: %s\n", doctor.getName(), day.getDay());
