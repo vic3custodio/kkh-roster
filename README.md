@@ -15,7 +15,7 @@ C:\GitHub\kkh-roster\build\libs>java -jar /GitHub/kkh-roster/build/libs/kkh_rost
 
 Sample below:
 
-C:\GitHub\kkh-roster\build\libs>java -jar /GitHub/kkh-roster/build/libs/kkh_roster-1.0-SNAPSHOT-uber.jar 2019-01-01to2019-01-31 1wIjFxOuctD-f0s9gG3f0QDf2QmkS1tXwT3o5hBU__-0 1psqPSDk16rpZBrQ-CP1_NS_-eDf4BLIG95ehdk_auCQ test!A3:AG
+C:\GitHub\kkh-roster\build\libs>java -jar /GitHub/kkh-roster/build/libs/kkh_roster-1.0-SNAPSHOT-uber.jar **2019-01-01to2019-01-31** **1wIjFxOuctD-f0s9gG3f0QDf2QmkS1tXwT3o5hBU__-0** **1psqPSDk16rpZBrQ-CP1_NS_-eDf4BLIG95ehdk_auCQ** **test!A3:AG**
 
 
 
