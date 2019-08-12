@@ -217,7 +217,9 @@ public class Main {
         }
 
         // scan the sheet second time to generate the C
-        assignCToDoctors(doctors, dayMap, daysOfTheMonth, localDate);
+        assignCToDoctors(doctors, dayMap, daysOfTheMonth, localDate, 1);
+        assignCToDoctors(doctors, dayMap, daysOfTheMonth, localDate, 2);
+        assignCToDoctors(doctors, dayMap, daysOfTheMonth, localDate, 3);
 
         // output the content to verify
         List<Object> cTotals = outputToVerify(doctors, dayMap, daysOfTheMonth);
@@ -324,7 +326,7 @@ public class Main {
         return cTotals;
     }
 
-    private static void assignCToDoctors(List<Doctor> doctors, Map<Integer, Day> dayMap, Integer daysOfTheMonth, LocalDate localDate) {
+    private static void assignCToDoctors(List<Doctor> doctors, Map<Integer, Day> dayMap, Integer daysOfTheMonth, LocalDate localDate, Integer columnLimit) {
         List<Doctor> sortedDoctors = new ArrayList<>(doctors);
         //List<Doctor> sortedDoctors = new ArrayList<>();//(doctors);
         //sortedDoctors.addAll(doctors);
@@ -345,9 +347,13 @@ public class Main {
                     //if (!cell.isFilled()) {
                     if (isSpaceBetweenTwoCMoreThanOne(doctor, i, daysOfTheMonth)) {
                         if (doctor.getCurrentTotalNumberOfCs() < 6) {
-                            if (day.getTotalNumberOfDoctorOnC() < 3) {
-                                if (i < (daysOfTheMonth-1) && !doctor.getCells().get(i + 1).isL()) {
-                                    if (DayOfWeek.SATURDAY.compareTo(localDate.getDayOfWeek()) != 0) {
+                            if (day.getTotalNumberOfDoctorOnC() < columnLimit) {
+                                if ((i < (daysOfTheMonth-1) && !doctor.getCells().get(i + 1).isL()) || i == (daysOfTheMonth-1)) {
+                                //if (i < (daysOfTheMonth) && (i < (daysOfTheMonth) && !doctor.getCells().get(i + 1).isL())) {
+                                    String date = localDate.getYear() + "-" + padWithZero("" + localDate.getMonthValue()) + "-" + padWithZero("" + (i+1));
+                                    //default, ISO_LOCAL_DATE
+                                    LocalDate ld = LocalDate.parse(date);
+                                    if (DayOfWeek.SATURDAY.compareTo(ld.getDayOfWeek()) != 0) {
                                         tryToAssignC(doctor, cell, day);
                                     } else {
                                         if (isNotCOnConsecutiveSat(doctor, i, daysOfTheMonth)) {
@@ -372,6 +378,13 @@ public class Main {
         }
         setCell(doctor, day, cell, cellValue);
         doctor.getCells().add(cell);
+    }
+
+    private static String padWithZero(String month) {
+        if (month == null || month.length() == 1) {
+            month = "0" + month;
+        }
+        return month;
     }
 
     private static String padTo3Char(String str) {
