@@ -16,9 +16,12 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
+import com.google.api.services.docs.v1.Docs;
+import com.google.api.services.docs.v1.model.*;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.*;
+import com.google.api.services.sheets.v4.model.Color;
 
 import java.util.List;
 
@@ -55,6 +58,8 @@ public class Main {
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
 
     public static final String BLUE = "BLUE";
+    public static final String WHITE = "WHITE";
+    public static final String GREEN = "GREEN";
     public static final String C = "C";
     public static final String L = "L";
     public static final String F = "F";
@@ -117,15 +122,25 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        String dateRange = "2019-01-01to2019-01-31";
         //String dateRange = "2019-01-01to2019-01-15";
         //String dateRange = "2019-01-01";
-        final String sourceSpreadsheetId = "1wIjFxOuctD-f0s9gG3f0QDf2QmkS1tXwT3o5hBU__-0";
-        final String targetSpreadsheetId = "1psqPSDk16rpZBrQ-CP1_NS_-eDf4BLIG95ehdk_auCQ";
-        final String range = "test!A3:AG";
+
+        //String dateRange = "2019-01-01to2019-01-31";
+        //final String sourceSpreadsheetId = "1wIjFxOuctD-f0s9gG3f0QDf2QmkS1tXwT3o5hBU__-0";
+        //final String targetSpreadsheetId = "1psqPSDk16rpZBrQ-CP1_NS_-eDf4BLIG95ehdk_auCQ";
+        //final String range = "test!A3:AG";
+
+        String dateRange = "2019-07-02to2019-08-04";
+        final String sourceSpreadsheetId = "1P3u-LNPo05yMlhYveFEcb4M43wAAMeraOXtN4aUN2kE";
+        final String targetSpreadsheetId = "1nXjLp8ZFsNjHqyn8nzPUuu5MVklVNcdnPzcpjyuWPHU";
+        final String range = "July!A4:AJ";
+
+        final String target2SpreadsheetId = "1jvCYffTi4Whr6saDuPDZfr8xViB1yxW-HgOxjpt2gRQ";
+        final String range2 = "July 2019!A4:AI";
+
         //final String range = "test!A3:Q";
 
-        String[] appArgs = new String[5];
+        String[] appArgs = new String[7];
         if (args == null || args.length < 1) {
             String[] dates = dateRange.split("to");
             appArgs[0] = dates[0];
@@ -138,6 +153,8 @@ public class Main {
             appArgs[2] = sourceSpreadsheetId;
             appArgs[3] = targetSpreadsheetId;
             appArgs[4] = range;
+            appArgs[5] = target2SpreadsheetId;
+            appArgs[6] = range2;
         } else {
             System.out.println("Program arguments was provided!!!");
             String[] dates = args[0].split("to");
@@ -155,6 +172,8 @@ public class Main {
             } else {
                 appArgs[4] = range;
             }
+            appArgs[5] = args[4];
+            appArgs[6] = args[5];
         }
 
         generateC(appArgs);
@@ -202,21 +221,43 @@ public class Main {
 
         for (GridData gridData: gridDatas) {
             int ctr = 1;
+            System.out.printf("RowData size : %s\n", gridData.getRowData().size());
             for (RowData rowData: gridData.getRowData()) {
-                CellData doctorCellData = rowData.getValues().get(0);
-                CellData doctorTierCellData = rowData.getValues().get(1);
-                if (ctr == 1 || ctr == 2 || doctorCellData.getFormattedValue() == null || skip.contains(doctorCellData.getFormattedValue())) {
-                    ctr++;
+                if (rowData.getValues() == null) {
+                    System.out.printf("RowData is null\n");
                     continue;
                 }
+                else if (rowData.getValues().size() <= 2) {
+                    System.out.printf("RowData size : %s\n", rowData.getValues().size());
+                    continue;
+                }
+                else if (rowData.getValues().size() > 2) {
+                    //System.out.printf("RowData size : %s\n", rowData.getValues().size());
+                }
+                CellData doctorCellData = rowData.getValues().get(0);
+                CellData doctorTierCellData = rowData.getValues().get(1);
+                //if (ctr == 1 || ctr == 2 || doctorCellData.getFormattedValue() == null || skip.contains(doctorCellData.getFormattedValue())) {
+                //    ctr++;
+                //    continue;
+                //}
                 Doctor doctor = new Doctor(doctorCellData.getFormattedValue());
-                if ("R2".equals(doctorTierCellData.getFormattedValue())) {
+                if ("R3".equals(doctorTierCellData.getFormattedValue())) {
                     doctor.setColor(BLUE);
                 }
-                else if (doctorCellData.getEffectiveFormat() != null && doctorCellData.getEffectiveFormat().getBackgroundColor() != null && doctorCellData.getEffectiveFormat().getBackgroundColor().equals(blueDoctorColor)) {
-                    System.out.printf("Pre-Setting doctor to BLUE Doctor Name: %s\n", doctor.getName());
-                    doctor.setColor(BLUE);
+                //else if (doctorCellData.getEffectiveFormat() != null && doctorCellData.getEffectiveFormat().getBackgroundColor() != null && doctorCellData.getEffectiveFormat().getBackgroundColor().equals(blueDoctorColor)) {
+                //    System.out.printf("Pre-Setting doctor to BLUE Doctor Name: %s\n", doctor.getName());
+                //    doctor.setColor(BLUE);
+                //}
+                else if ("R0".equals(doctorTierCellData.getFormattedValue())) {
+                    doctor.setColor(WHITE);
                 }
+                else if ("R2".equals(doctorTierCellData.getFormattedValue())) {
+                    doctor.setColor(GREEN);
+                }
+                else {
+                    continue;
+                }
+
                 for (int i=1; i<=daysBetween.intValue(); i++) {
                     CellData cellData = rowData.getValues().get(i+1);
                     Day day = null;
@@ -224,7 +265,8 @@ public class Main {
                     if (dayMap.containsKey(ld)) {
                         day = dayMap.get(ld);
                     } else {
-                        dayMap.put(ld, new Day(ld.getDayOfMonth()));
+                        day = new Day(ld.getDayOfMonth());
+                        dayMap.put(ld, day);
                     }
                     if (cellData != null) {
                         //if (cellData != null && cellData.getEffectiveFormat() != null && cellData.getEffectiveFormat().getBackgroundColor() != null) {
@@ -243,15 +285,30 @@ public class Main {
 
         // scan the sheet second time to generate the C
         // do it 3 times to distribute evenly
-        assignCToDoctors(doctors, dayMap, daysBetween.intValue(), localDateFrom, 1);
-        assignCToDoctors(doctors, dayMap, daysBetween.intValue(), localDateFrom, 2);
-        assignCToDoctors(doctors, dayMap, daysBetween.intValue(), localDateFrom, 3);
+        assignCToDoctors(sortAccordingToLeavesDesc(doctors), dayMap, daysBetween.intValue(), localDateFrom, 1, 3);
+        assignCToDoctors(sortAccordingToCsAsc(doctors), dayMap, daysBetween.intValue(), localDateFrom, 1, 4);
+        assignCToDoctors(sortAccordingToCsAsc(doctors), dayMap, daysBetween.intValue(), localDateFrom, 1, 5);
+        assignCToDoctors(sortAccordingToCsAsc(doctors), dayMap, daysBetween.intValue(), localDateFrom, 1, 6);
+        assignCToDoctors(sortAccordingToCsAsc(doctors), dayMap, daysBetween.intValue(), localDateFrom, 2, 6);
+        assignCToDoctors(sortAccordingToCsAsc(doctors), dayMap, daysBetween.intValue(), localDateFrom, 3, 6);
+        assignCToDoctors(sortAccordingToCsAsc(doctors), dayMap, daysBetween.intValue(), localDateFrom, 3, 6);
 
         // output the content to verify
         List<Object> cTotals = outputToVerify(doctors, dayMap, localDateFrom, daysBetween.intValue());
 
-        // copy the generated data to another sheet
+        // copy the generated data to junior leave sheet
         copyResultToTargetSheet(service, sourceSpreadsheetId, range, args, doctors, daysBetween.intValue(), cTotals, skip);
+
+        // copy the generated data to master monthly roster sheet
+        final String target2SpreadsheetId = args[5]; //"1jvCYffTi4Whr6saDuPDZfr8xViB1yxW-HgOxjpt2gRQ";
+        final String range2 = args[6]; //"July 2019!A3:AI";
+        copyResultToMasterSheet(service, target2SpreadsheetId, range2, args, doctors, daysBetween.intValue(), cTotals, skip);
+
+        // no need to do this
+        // copy the generated data to allocation sheet
+        //copyResultToAllocationSheet(service, doctors, daysBetween.intValue(), localDateFrom, dayMap);
+
+        //copyWeeklyRosterSheetToDoc();
 
     }
 
@@ -265,27 +322,44 @@ public class Main {
         int j = 0;
         List<List<Object>> updatedValues = new ArrayList<>();
         for (List row : values) {
+
             boolean isSkip = false;
             for (int i = 0; i <= (daysBetween+1); i++) {
+
+                if (row == null) {
+                    isSkip = true;
+                    break;
+                }
+                else if (row.size() < 2) {
+                    isSkip = true;
+                    break;
+                }
+                if (!isTier(row.get(1))) {
+                    isSkip = true;
+                    break;
+                }
+
+
                 if (row.size() > i) {
                     if (i == 0) { // first column is the name
                         String name = row.get(i).toString();
-                        if (skip.contains(name)) {
-                            isSkip = true;
-                            break;
-                        }
+                        //if (skip.contains(name)) {
+                        //    isSkip = true;
+                        //    break;
+                        //}
                     }
                     else if (i == 1) { // second column is the tier
                         row.set(i, row.get(i).toString());
                     }
                     else {
-                        if (doctors.get(j).getCells().size() >= (i - 2)) {
-                            String value = doctors.get(j).getCells().get(i - 2).getValue();
-                            if (value != null && !F.equals(value)) {
-                                row.set(i, doctors.get(j).getCells().get(i - 2).getValue());
-                            }
-                            else {
-                                row.set(i, "");
+                        if (j < doctors.size()) {
+                            if (doctors.get(j).getCells().size() >= (i - 2)) {
+                                String value = doctors.get(j).getCells().get(i - 2).getValue();
+                                if (value != null && !F.equals(value)) {
+                                    row.set(i, doctors.get(j).getCells().get(i - 2).getValue());
+                                } else {
+                                    row.set(i, "");
+                                }
                             }
                         }
                     }
@@ -294,7 +368,7 @@ public class Main {
                     if (i == 1) { // second column is the tier
                         row.add("");
                     }
-                    else if (doctors.size() > j && i > 1) {
+                    else if (j < doctors.size() && i > 1) {
                         String value = doctors.get(j).getCells().get(i - 2).getValue();
                         if (value != null && !F.equals(value)) {
                             row.add(value);
@@ -323,15 +397,297 @@ public class Main {
                 .execute();
     }
 
-    private static List<Object> outputToVerify(List<Doctor> doctors, Map<LocalDate, Day> dayMap, LocalDate localDateFrom, Integer daysBetween) {
-        System.out.println("|Doctor|001|002|003|004|005|006|007|008|009|010|011|012|013|014|015|016|017|018|019|020|021|022|023|024|025|026|027|028|029|030|031|TOT|");
+    private static void copyResultToMasterSheet(Sheets service, String sourceSpreadsheetId, String range, String[] args, List<Doctor> doctors, Integer daysBetween, List<Object> cTotals, Set<String> skip) throws Exception {
+        Map<String, Doctor> doctorMap = new HashMap<>();
         for (Doctor doctor: doctors) {
-            String name = doctor.getName();
+            doctorMap.put(doctor.getName(), doctor);
+        }
+
+        ValueRange response = service.spreadsheets().values()
+                .get(sourceSpreadsheetId, range)
+                .execute();
+
+        List<List<Object>> values = response.getValues();
+
+        List<List<Object>> updatedValues = new ArrayList<>();
+        for (List row : values) {
+
+            String name = null;
+            Doctor doctor = null;
+            for (int i = 0; i < (daysBetween+1); i++) {
+
+                if (row == null) {
+                    break;
+                }
+                if (row.size() > 0 && i == 0) { // first column is the name
+                    name = row.get(0).toString();
+                    if (doctorMap.get(name) != null) {
+                        doctor = doctorMap.get(name);
+                        continue;
+                    }
+                    else {
+                        break;
+                    }
+                }
+
+                if (doctor == null) {
+                    break;
+                }
+
+                if (row.size() > i) {
+                    if (i == 0) { // first column is the name
+                    }
+                    else {
+                        String value = doctor.getCells().get(i-1).getValue();
+                        if (value != null && !F.equals(value)) {
+                            row.set(i, value);
+                        } else {
+                            row.set(i, "");
+                        }
+                    }
+                }
+                else {
+                    String value = doctor.getCells().get(i-1).getValue();
+                    if (value != null && !F.equals(value)) {
+                        row.add(value);
+                    }
+                    else {
+                        row.add("");
+                    }
+                }
+            }
+            updatedValues.add(row);
+        }
+
+        ValueRange body = new ValueRange().setValues(updatedValues);
+
+        service.spreadsheets().values().update(sourceSpreadsheetId, range, body)
+                //.setValueInputOption("USER_ENTERED")
+                .setValueInputOption("RAW")
+                .execute();
+    }
+
+    private static void copyResultToAllocationSheet(Sheets service, List<Doctor> doctors, Integer daysBetween, LocalDate localDateFrom, Map<LocalDate, Day> dayMap) throws Exception {
+        Map<String, Doctor> doctorMap = new HashMap<>();
+        for (Doctor doctor: doctors) {
+            doctorMap.put(doctor.getName(), doctor);
+        }
+
+        final String target3SpreadsheetId = "1k7TTtk8Rxg6G39qqkaaAwLl3--kXpq8od4i2-frKBq8";
+        final String range3 = "allocate!A4:B";
+        final String range4 = "allocate!GW4:HJ";
+
+        //GetSpreadsheetByDataFilterRequest r = new GetSpreadsheetByDataFilterRequest();
+        ValueRange response = service.spreadsheets()
+                //.getByDataFilter("", r)
+                .values()
+                .get(target3SpreadsheetId, range3)
+                //.getByDataFilter("", r)
+                .execute()
+                ;
+
+        ValueRange response2 = service.spreadsheets()
+                //.getByDataFilter("", r)
+                .values()
+                .get(target3SpreadsheetId, range4)
+                //.getByDataFilter("", r)
+                .execute()
+                ;
+
+        List<List<Object>> values = response.getValues();
+
+        List<Integer> indexesToUpdate = new ArrayList<>();
+        List<String> doctorsSet = new ArrayList<>();
+        int index = 0;
+        for (List row: values) {
+
+            //String name = null;
+            if (row.size() > 0 ) { // first column is the name
+                String name = row.get(0).toString();
+                if (doctorMap.get(name) != null) {
+                    if (!doctorsSet.contains(name)) {
+                        System.out.println("");
+                        System.out.printf("index : %s, Doctor : %s", index, name);
+                        indexesToUpdate.add(index);
+                        doctorsSet.add(name);
+                    }
+                }
+            }
+            index++;
+        }
+
+        List<List<Object>> values2 = response2.getValues();
+
+        List<List<Object>> updatedValues = new ArrayList<>();
+        int index4 = 0;
+        int ctr = -1;
+        Integer startDate = 22;
+        String dateStart = localDateFrom.getYear() + "-" + padWithZero("" + localDateFrom.getMonthValue()) + "-" + padWithZero("" + startDate);
+        LocalDate localDateStart = LocalDate.parse(dateStart);
+
+        for (List row: values2) {
+
+            if (!indexesToUpdate.contains(index4)) {
+                index4++;
+                continue;
+            }
+            else {
+                ctr++;
+            }
+            //String name = null;
+            //Doctor doctor = null;
+            int x = 0;
+            for (int i = 0; i < (daysBetween); i++) {
+
+                if (row == null) {
+                    break;
+                }
+                /*
+                if (row.size() > 0 && i == 0) { // first column is the name
+                    name = row.get(0).toString();
+                    if (doctorMap.get(name) != null) {
+                        doctor = doctorMap.get(name);
+                        continue;
+                    }
+                    else {
+                        break;
+                    }
+                }
+
+                if (doctor == null) {
+                    break;
+                }
+                */
+
+                LocalDate ld = localDateFrom.plusDays(i);
+                Day day = dayMap.get(ld);
+
+                if (ld.compareTo(localDateStart) < 0) {
+                    continue;
+                }
+
+                if (row.size() > x) {
+                    //if (i == 0) { // first column is the name
+                    //}
+                    //else {
+                    Doctor doctor = doctorMap.get(doctorsSet.get(ctr));
+                    String value = doctor.getCells().get(i).getValue();
+                        if (value != null && !F.equals(value)) {
+                            System.out.println("");
+                            System.out.printf("Doctor : %s, Date : %s, Value : %s", doctor.getName(), ld.toString(), value);
+                            row.set(x, value);
+                        } else {
+                            System.out.println("");
+                            System.out.printf("Doctor : %s, Date : %s, Value : %s", doctor.getName(), ld.toString(), "null");
+                            row.set(x, "");
+                        }
+                    //}
+                }
+                else {
+                    if (doctorsSet.size() > ctr) {
+                        Doctor doctor = doctorMap.get(doctorsSet.get(ctr));
+                        String value = doctor.getCells().get(i).getValue();
+                        if (value != null && !F.equals(value)) {
+                            System.out.println("");
+                            System.out.printf("add Doctor : %s, Date : %s, Value : %s", doctor.getName(), ld.toString(), value);
+                            row.add(value);
+                        } else {
+                            System.out.println("");
+                            System.out.printf("add Doctor : %s, Date : %s, Value : %s", doctor.getName(), ld.toString(), "null");
+                            row.add("");
+                        }
+                    }
+                }
+                //ctr++;
+
+                x++;
+            }
+            updatedValues.add(row);
+            index4++;
+        }
+
+        ValueRange body = new ValueRange().setValues(updatedValues);
+
+        service.spreadsheets().values().update(target3SpreadsheetId, range4, body)
+                //.setValueInputOption("USER_ENTERED")
+                .setValueInputOption("RAW")
+                .execute();
+    }
+
+    private static void copyWeeklyRosterSheetToDoc() throws Exception {
+        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+        Docs service = new Docs.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+                .setApplicationName(APPLICATION_NAME)
+                .build();
+
+        Document response = service.documents().get("1jNnYxu5M4wQ4IQmobIdq3S5JtaM7xnFn2EUn0EkPhW8").execute();
+        String title = response.getTitle();
+        System.out.printf("The title of the doc is: %s\n", title);
+
+        Body body = response.getBody();
+
+
+
+        List<StructuralElement> contents = body.getContent();
+        System.out.println(contents);
+        for (StructuralElement content: contents) {
+            Table table = content.getTable();
+            for (TableRow tableRow: table.getTableRows()) {
+                for (TableCell tableCell: tableRow.getTableCells()) {
+                    for (StructuralElement cellContent: tableCell.getContent()) {
+                        //cellContent.getParagraph().get
+                    }
+                }
+            }
+        }
+
+
+
+        BatchUpdateDocumentRequest content = new BatchUpdateDocumentRequest();
+        com.google.api.services.docs.v1.model.Request request = new com.google.api.services.docs.v1.model.Request();
+        //InsertTableRowRequest insertTableRowRequest = new InsertTableRowRequest();
+        //TableCellLocation tableCellLocation = new TableCellLocation();
+        ////tableCellLocation.setRowIndex()
+        //insertTableRowRequest.setTableCellLocation(tableCellLocation);
+        ////insertTableRowRequest.set
+        //request.setInsertTableRow(insertTableRowRequest);
+
+        InsertTableRequest insertTableRequest = new InsertTableRequest();
+        insertTableRequest.setColumns(2);
+        insertTableRequest.setRows(2);
+        Location location = new Location();
+        //location.setIndex();
+        //location.setSegmentId();
+        insertTableRequest.setLocation(location);
+        //insertTableRequest.setEndOfSegmentLocation();
+        request.setInsertTable(insertTableRequest);
+
+
+        List<com.google.api.services.docs.v1.model.Request> requests = new ArrayList<>();
+        requests.add(request);
+        content.setRequests(requests);
+        service.documents().batchUpdate("1jNnYxu5M4wQ4IQmobIdq3S5JtaM7xnFn2EUn0EkPhW8", content)
+        ;
+
+    }
+
+    private static List<Object> outputToVerify(List<Doctor> doctors, Map<LocalDate, Day> dayMap, LocalDate localDateFrom, Integer daysBetween) {
+        //System.out.println("|Doctor|001|002|003|004|005|006|007|008|009|010|011|012|013|014|015|016|017|018|019|020|021|022|023|024|025|026|027|028|029|030|031|TOT|");
+        String header = "|Doctor|";
+        for (int i=0; i<daysBetween; i++) {
+            LocalDate ld = localDateFrom.plusDays(i);
+            Day day = dayMap.get(ld);
+            header = header + padTo3Char("" + day.getDay()) + "|";
+        }
+        System.out.println(header);
+
+        for (Doctor doctor: doctors) {
+            String name = doctor.getName().trim();
             if (name.length() >= 6) {
                 name = name.substring(0, 6);
             }
             else {
-                name = padWithSpace(name, 7);
+                name = padWithSpace(name, 8);
             }
             String row = "|" + name + "|";
             for (int i=0; i<daysBetween+1; i++) {
@@ -359,7 +715,7 @@ public class Main {
         return cTotals;
     }
 
-    private static void assignCToDoctors(List<Doctor> doctors, Map<LocalDate, Day> dayMap, Integer daysBetween, LocalDate localDateFrom, Integer columnLimit) {
+    private static List<Doctor> sortAccordingToLeavesDesc(List<Doctor> doctors) {
         List<Doctor> sortedDoctors = new ArrayList<>(doctors);
         //List<Doctor> sortedDoctors = new ArrayList<>();//(doctors);
         //sortedDoctors.addAll(doctors);
@@ -368,6 +724,41 @@ public class Main {
                 return d2.getCurrentTotalNumberOfLs().compareTo(d1.getCurrentTotalNumberOfLs());
             }
         });
+
+        return sortedDoctors;
+    }
+
+    private static List<Doctor> sortAccordingToCsAsc(List<Doctor> doctors) {
+        List<Doctor> sortedDoctors = new ArrayList<>(doctors);
+        Collections.sort(sortedDoctors, new Comparator<Doctor>() {
+            public int compare(Doctor d1, Doctor d2) {
+                return d1.getCurrentTotalNumberOfCs().compareTo(d2.getCurrentTotalNumberOfCs());
+            }
+        });
+
+        return sortedDoctors;
+    }
+
+    private static List<Doctor> sortAccordingToCsOnWeekendsAsc(List<Doctor> doctors) {
+        List<Doctor> sortedDoctors = new ArrayList<>(doctors);
+        Collections.sort(sortedDoctors, new Comparator<Doctor>() {
+            public int compare(Doctor d1, Doctor d2) {
+                return d1.getCurrentTotalNumberOfCs().compareTo(d2.getCurrentTotalNumberOfCs());
+            }
+        });
+
+        return sortedDoctors;
+    }
+
+    private static void assignCToDoctors(List<Doctor> sortedDoctors, Map<LocalDate, Day> dayMap, Integer daysBetween, LocalDate localDateFrom, Integer columnLimit, Integer rowLimit) {
+        /*
+        List<Doctor> sortedDoctors = new ArrayList<>(doctors);
+        Collections.sort(sortedDoctors, new Comparator<Doctor>() {
+            public int compare(Doctor d1, Doctor d2) {
+                return d2.getCurrentTotalNumberOfLs().compareTo(d1.getCurrentTotalNumberOfLs());
+            }
+        });
+        */
 
         System.out.printf("First doctor on the list: %s", sortedDoctors.get(0).getName());
         System.out.println("");
@@ -380,7 +771,7 @@ public class Main {
                 if (cell.getValue() == null || cell.getValue().length() == 0) {
                     //if (!cell.isFilled()) {
                     if (isSpaceBetweenTwoCMoreThanOne(doctor, i, daysBetween)) {
-                        if (doctor.getCurrentTotalNumberOfCs() < 6) {
+                        if (doctor.getCurrentTotalNumberOfCs() < rowLimit) {
                             if (day.getTotalNumberOfDoctorOnC() < columnLimit) {
                                 if ((i < (daysBetween-1) && !doctor.getCells().get(i + 1).isL()) || i == (daysBetween-1)) {
                                     //String date = localDateFrom.getYear() + "-" + padWithZero("" + localDateFrom.getMonthValue()) + "-" + padWithZero("" + (i+1));
@@ -459,6 +850,10 @@ public class Main {
             System.out.printf("Pre-Setting doctor to %s Doctor Name: %s, Day: %s\n", cellValue, doctor.getName(), day.getDay());
             cell.setValue(F);
         }
+        else if (WHITE.equals(doctor.getColor())) {
+            System.out.printf("Pre-Setting white doctor to %s Doctor Name: %s, Day: %s\n", F, doctor.getName(), day.getDay());
+            cell.setValue(F);
+        }
         else {
             //System.out.printf("Pre-Setting doctor to blank Doctor Name: %s, Day: %s\n", doctor.getName(), day.getDay());
             cell.setValue("");
@@ -501,9 +896,25 @@ public class Main {
     }
 
     private static String padWithSpace(String str, Integer fixedLength) {
-        for (int i=0; i<=(fixedLength-str.length()); i++) {
-            str = str + " ";
+        //for (int i=0; i<(fixedLength-str.length()); i++) {
+        //    str = str + " ";
+        //}
+        str = str + "      ";
+        return str.substring(0, 6);
+        //return str;
+    }
+
+    private static Boolean isTier(Object str) {
+        if (str != null) {
+            if ("R0".equals(str.toString()) || "R1".equals(str.toString()) || "R2".equals(str.toString()) || "R3".equals(str.toString())) {
+                return true;
+            }
+            else {
+                return false;
+            }
         }
-        return str;
+        else {
+            return false;
+        }
     }
 }

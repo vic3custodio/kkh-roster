@@ -11,11 +11,11 @@ kkh doctors rostering app
 
 Program parameter
 
-C:\GitHub\kkh-roster\build\libs>java -jar /GitHub/kkh-roster/build/libs/kkh_roster-1.0-SNAPSHOT-uber.jar <fromDate yyyy-MM-dd>to<toDateyyyy-MM-dd> <sourceSpreadSheetId> <targetSpreadSheetId> <optional and defaulted to test!A3:AG range>
+C:\GitHub\kkh-roster\build\libs>java -jar /GitHub/kkh-roster/build/libs/kkh_roster-1.0-SNAPSHOT-uber.jar <fromDate yyyy-MM-dd>to<toDateyyyy-MM-dd> <sourceSpreadSheetId> <targetSpreadSheetId> <sourceSpreadSheetRange> <target2SpreadSheetId> <target2SpreadSheetRange>
 
 Sample below:
 
-C:\GitHub\kkh-roster\build\libs>java -jar /GitHub/kkh-roster/build/libs/kkh_roster-1.0-SNAPSHOT-uber.jar **2019-01-01to2019-01-31** **1wIjFxOuctD-f0s9gG3f0QDf2QmkS1tXwT3o5hBU__-0** **1psqPSDk16rpZBrQ-CP1_NS_-eDf4BLIG95ehdk_auCQ** **test!A3:AG**
+C:\GitHub\kkh-roster\build\libs>java -jar /GitHub/kkh-roster/build/libs/kkh_roster-1.0-SNAPSHOT-uber.jar **2019-07-02to2019-08-04** **1P3u-LNPo05yMlhYveFEcb4M43wAAMeraOXtN4aUN2kE** **1nXjLp8ZFsNjHqyn8nzPUuu5MVklVNcdnPzcpjyuWPHU** **July!A4:AJ** **1jvCYffTi4Whr6saDuPDZfr8xViB1yxW-HgOxjpt2gRQ** **July 2019!A4:AI**
 
 
 

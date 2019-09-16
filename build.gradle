@@ -19,6 +19,9 @@ dependencies {
     compile 'com.google.api-client:google-api-client:1.23.0'
     compile 'com.google.oauth-client:google-oauth-client-jetty:1.23.0'
     compile 'com.google.apis:google-api-services-sheets:v4-rev516-1.23.0'
+    //compile 'com.google.apis:google-api-services-docs:v1-rev20190128-1.28.0'
+    //compile 'com.google.apis:google-api-services-docs:v1-rev20190128-1.29.0'
+    compile group: 'com.google.apis', name: 'google-api-services-docs', version: 'v1-rev29-1.25.0'
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
